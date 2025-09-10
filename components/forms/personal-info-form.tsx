@@ -15,6 +15,7 @@ interface PersonalInfoData {
   linkedin: string
   website: string
   summary: string
+  careerKeywords: string
 }
 
 interface PersonalInfoFormProps {
@@ -95,6 +96,19 @@ export function PersonalInfoForm({ data, onChange }: PersonalInfoFormProps) {
         </div>
 
         <div>
+          <Label htmlFor="careerKeywords">Career Keywords</Label>
+          <Input
+            id="careerKeywords"
+            value={data.careerKeywords}
+            onChange={(e) => updateField("careerKeywords", e.target.value)}
+            placeholder="e.g., software engineer, full-stack developer, React, Node.js"
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            Enter keywords related to your desired career to generate a targeted summary
+          </p>
+        </div>
+
+        <div>
           <div className="flex items-center justify-between mb-2">
             <Label htmlFor="summary">Professional Summary</Label>
             <Button variant="ghost" size="sm" className="h-auto p-1 text-secondary">
@@ -112,8 +126,8 @@ export function PersonalInfoForm({ data, onChange }: PersonalInfoFormProps) {
           <div className="mt-2">
             <AIAssistant
               section="summary"
-              userInput={`${data.fullName} - ${data.location}`}
-              jobTitle="Professional"
+              userInput={`${data.fullName} - ${data.location} - Career Focus: ${data.careerKeywords || "General Professional"}`}
+              jobTitle={data.careerKeywords || "Professional"}
               industry="General"
               onContentGenerated={(content) => updateField("summary", content)}
             />

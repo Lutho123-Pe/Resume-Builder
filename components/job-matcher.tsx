@@ -101,14 +101,14 @@ export function JobMatcher({ resumeContent }: JobMatcherProps) {
             </div>
 
             {/* Matching Skills */}
-            {result.matchingSkills.length > 0 && (
+            {(result.matchingSkills?.length ?? 0) > 0 && (
               <div className="space-y-2">
                 <h4 className="text-sm font-medium flex items-center gap-2">
                   <CheckCircle className="h-4 w-4 text-green-600" />
                   Matching Qualifications
                 </h4>
                 <div className="flex flex-wrap gap-1">
-                  {result.matchingSkills.map((skill, index) => (
+                  {(result.matchingSkills || []).map((skill, index) => (
                     <Badge key={index} variant="default" className="text-xs bg-green-100 text-green-800">
                       {skill}
                     </Badge>
@@ -118,14 +118,14 @@ export function JobMatcher({ resumeContent }: JobMatcherProps) {
             )}
 
             {/* Missing Requirements */}
-            {result.missingRequirements.length > 0 && (
+            {(result.missingRequirements?.length ?? 0) > 0 && (
               <div className="space-y-2">
                 <h4 className="text-sm font-medium flex items-center gap-2">
                   <XCircle className="h-4 w-4 text-red-600" />
                   Missing Requirements
                 </h4>
                 <div className="flex flex-wrap gap-1">
-                  {result.missingRequirements.map((req, index) => (
+                  {(result.missingRequirements || []).map((req, index) => (
                     <Badge key={index} variant="outline" className="text-xs border-red-200 text-red-700">
                       {req}
                     </Badge>
@@ -135,14 +135,14 @@ export function JobMatcher({ resumeContent }: JobMatcherProps) {
             )}
 
             {/* Keywords to Add */}
-            {result.keywordsToAdd.length > 0 && (
+            {(result.keywordsToAdd?.length ?? 0) > 0 && (
               <div className="space-y-2">
                 <h4 className="text-sm font-medium flex items-center gap-2">
                   <Lightbulb className="h-4 w-4 text-blue-600" />
                   Keywords to Add
                 </h4>
                 <div className="flex flex-wrap gap-1">
-                  {result.keywordsToAdd.map((keyword, index) => (
+                  {(result.keywordsToAdd || []).map((keyword, index) => (
                     <Badge key={index} variant="outline" className="text-xs border-blue-200 text-blue-700">
                       {keyword}
                     </Badge>
@@ -152,11 +152,11 @@ export function JobMatcher({ resumeContent }: JobMatcherProps) {
             )}
 
             {/* Suggestions */}
-            {result.suggestions.length > 0 && (
+            {(result.suggestions?.length ?? 0) > 0 && (
               <div className="space-y-2">
                 <h4 className="text-sm font-medium">Improvement Suggestions</h4>
                 <ul className="text-xs space-y-1 text-muted-foreground">
-                  {result.suggestions.map((suggestion, index) => (
+                  {(result.suggestions || []).map((suggestion, index) => (
                     <li key={index} className="flex items-start gap-2">
                       <span className="text-primary">•</span>
                       {suggestion}

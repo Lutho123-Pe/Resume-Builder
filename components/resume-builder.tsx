@@ -38,6 +38,7 @@ interface ResumeData {
     linkedin: string
     website: string
     summary: string
+    careerKeywords: string // Added careerKeywords field to interface
   }
   experience: Array<{
     id: string
@@ -75,6 +76,7 @@ const initialResumeData: ResumeData = {
     linkedin: "",
     website: "",
     summary: "",
+    careerKeywords: "", // Added careerKeywords to initial data
   },
   experience: [],
   education: [],

@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 
-function analyzeATSCompatibility(resumeData: any, template: string) {
+function analyzeATSCompatibility(resumeData: any, template: string, careerKeywords: string[] = []) {
   const requiredSections = ["personalInfo", "experience", "education", "skills"]
   const optionalSections = ["summary", "projects", "certifications", "awards"]
 
@@ -9,6 +9,10 @@ function analyzeATSCompatibility(resumeData: any, template: string) {
   const formattingIssues = []
   const missingSections = []
   const criticalIssues = []
+
+  // Extract all text content from resume for keyword analysis
+  const resumeText = extractResumeText(resumeData).toLowerCase()
+  const careerKeywordsLower = careerKeywords.map((k) => k.toLowerCase())
 
   // Check required sections
   for (const section of requiredSections) {
@@ -23,7 +27,7 @@ function analyzeATSCompatibility(resumeData: any, template: string) {
       atsScore -= 20
       criticalIssues.push(`Missing required section: ${section}`)
     } else {
-      // Analyze section content
+      // Analyze section content based on actual user data
       if (section === "experience" && Array.isArray(sectionData)) {
         sectionData.forEach((exp, index) => {
           if (!exp.jobTitle || exp.jobTitle.length < 2) {
@@ -39,13 +43,35 @@ function analyzeATSCompatibility(resumeData: any, template: string) {
             suggestions.push("Add detailed job descriptions with quantifiable achievements")
             sectionScore -= 15
           }
+
+          // Check if experience aligns with career keywords
+          const expText = (exp.description || "").toLowerCase()
+          const keywordMatches = careerKeywordsLower.filter((keyword) => expText.includes(keyword))
+          if (careerKeywords.length > 0 && keywordMatches.length === 0) {
+            suggestions.push(
+              `Experience ${index + 1}: Consider incorporating career-relevant keywords: ${careerKeywords.slice(0, 3).join(", ")}`,
+            )
+            sectionScore -= 5
+          }
         })
       }
 
-      if (section === "skills" && Array.isArray(sectionData) && sectionData.length < 5) {
-        issues.push("Too few skills listed")
-        suggestions.push("Add more relevant technical and soft skills")
-        sectionScore -= 10
+      if (section === "skills" && Array.isArray(sectionData)) {
+        if (sectionData.length < 5) {
+          issues.push("Too few skills listed")
+          suggestions.push("Add more relevant technical and soft skills")
+          sectionScore -= 10
+        }
+
+        // Check skill alignment with career goals
+        const skillNames = sectionData.map((s) => (s.name || "").toLowerCase())
+        const skillKeywordMatches = careerKeywordsLower.filter((keyword) =>
+          skillNames.some((skill) => skill.includes(keyword)),
+        )
+        if (careerKeywords.length > 0 && skillKeywordMatches.length < careerKeywords.length * 0.3) {
+          suggestions.push(`Add skills related to your career goals: ${careerKeywords.slice(0, 3).join(", ")}`)
+          sectionScore -= 10
+        }
       }
 
       if (section === "personalInfo") {
@@ -57,6 +83,18 @@ function analyzeATSCompatibility(resumeData: any, template: string) {
         if (!sectionData.phone || sectionData.phone.length < 10) {
           issues.push("Missing or invalid phone number")
           sectionScore -= 15
+        }
+
+        // Check if summary aligns with career keywords
+        if (sectionData.summary && careerKeywords.length > 0) {
+          const summaryText = sectionData.summary.toLowerCase()
+          const summaryKeywordMatches = careerKeywordsLower.filter((keyword) => summaryText.includes(keyword))
+          if (summaryKeywordMatches.length < careerKeywords.length * 0.5) {
+            suggestions.push(
+              `Professional summary should include more career-relevant keywords: ${careerKeywords.slice(0, 3).join(", ")}`,
+            )
+            sectionScore -= 5
+          }
         }
       }
     }
@@ -77,36 +115,10 @@ function analyzeATSCompatibility(resumeData: any, template: string) {
     atsScore -= 10
   }
 
-  // General formatting checks
-  const totalContent = JSON.stringify(resumeData).length
-  if (totalContent < 500) {
-    formattingIssues.push("Resume content appears too brief")
-    atsScore -= 15
-  }
+  // Enhanced keyword analysis based on actual content and career goals
+  const keywordAnalysis = analyzeKeywordDensity(resumeText, careerKeywords)
 
-  // Keyword analysis
-  const keywordDensity = Math.min(100, totalContent / 50) // Simple density calculation
-  const keywordAnalysis = {
-    density: Math.round(keywordDensity),
-    suggestions: [
-      "Include industry-specific keywords throughout your resume",
-      "Use keywords from job descriptions you're targeting",
-      "Balance keyword usage to avoid over-optimization",
-    ],
-  }
-
-  // Generate recommendations
-  const recommendations = [
-    "Use standard section headings (Experience, Education, Skills)",
-    "Save resume in PDF format for best ATS compatibility",
-    "Use simple, clean formatting without complex layouts",
-    "Include relevant keywords naturally in your content",
-    "Quantify achievements with specific numbers and metrics",
-  ]
-
-  if (missingSections.length > 0) {
-    recommendations.unshift("Add all required resume sections")
-  }
+  const recommendations = generatePersonalizedRecommendations(resumeData, careerKeywords, missingSections)
 
   return {
     atsScore: Math.max(0, Math.round(atsScore)),
@@ -119,15 +131,91 @@ function analyzeATSCompatibility(resumeData: any, template: string) {
   }
 }
 
+function extractResumeText(resumeData: any): string {
+  let text = ""
+
+  if (resumeData.personalInfo?.summary) {
+    text += resumeData.personalInfo.summary + " "
+  }
+
+  if (Array.isArray(resumeData.experience)) {
+    resumeData.experience.forEach((exp: any) => {
+      text += (exp.jobTitle || "") + " " + (exp.company || "") + " " + (exp.description || "") + " "
+    })
+  }
+
+  if (Array.isArray(resumeData.skills)) {
+    resumeData.skills.forEach((skill: any) => {
+      text += (skill.name || "") + " "
+    })
+  }
+
+  if (Array.isArray(resumeData.education)) {
+    resumeData.education.forEach((edu: any) => {
+      text += (edu.degree || "") + " " + (edu.school || "") + " " + (edu.field || "") + " "
+    })
+  }
+
+  return text
+}
+
+function analyzeKeywordDensity(resumeText: string, careerKeywords: string[]) {
+  const totalWords = resumeText.split(/\s+/).length
+  const keywordMatches = careerKeywords.filter((keyword) => resumeText.toLowerCase().includes(keyword.toLowerCase()))
+
+  const density = totalWords > 0 ? Math.round((keywordMatches.length / totalWords) * 100) : 0
+
+  return {
+    density: Math.min(100, density * 10), // Scale for better representation
+    matchedKeywords: keywordMatches,
+    missingKeywords: careerKeywords.filter((keyword) => !resumeText.toLowerCase().includes(keyword.toLowerCase())),
+    suggestions: [
+      "Include industry-specific keywords throughout your resume",
+      "Use keywords from job descriptions you're targeting",
+      "Balance keyword usage to avoid over-optimization",
+      careerKeywords.length > 0 ? `Focus on incorporating: ${careerKeywords.slice(0, 3).join(", ")}` : null,
+    ].filter(Boolean),
+  }
+}
+
+function generatePersonalizedRecommendations(resumeData: any, careerKeywords: string[], missingSections: string[]) {
+  const recommendations = []
+
+  if (missingSections.length > 0) {
+    recommendations.push("Add all required resume sections")
+  }
+
+  if (careerKeywords.length > 0) {
+    recommendations.push(`Incorporate career-relevant keywords: ${careerKeywords.slice(0, 3).join(", ")}`)
+  }
+
+  if (resumeData.experience && Array.isArray(resumeData.experience)) {
+    const hasQuantifiedAchievements = resumeData.experience.some(
+      (exp: any) => exp.description && /\d+/.test(exp.description),
+    )
+    if (!hasQuantifiedAchievements) {
+      recommendations.push("Add quantified achievements with specific numbers and metrics")
+    }
+  }
+
+  recommendations.push(
+    "Use standard section headings (Experience, Education, Skills)",
+    "Save resume in PDF format for best ATS compatibility",
+    "Use simple, clean formatting without complex layouts",
+  )
+
+  return recommendations
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const { resumeData, template } = await request.json()
+    const { resumeData, template, careerKeywords } = await request.json()
 
     if (!resumeData) {
       return NextResponse.json({ error: "Resume data is required" }, { status: 400 })
     }
 
-    const analysis = analyzeATSCompatibility(resumeData, template || "modern")
+    const analysis = analyzeATSCompatibility(resumeData, template || "modern", careerKeywords || [])
 
     return NextResponse.json(analysis)
   } catch (error) {

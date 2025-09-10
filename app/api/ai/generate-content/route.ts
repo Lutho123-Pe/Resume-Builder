@@ -105,9 +105,45 @@ const industryTemplates = {
   },
 }
 
+function incorporateCareerKeywords(content: string, careerKeywords: string): string {
+  if (!careerKeywords) return content
+
+  const keywords = careerKeywords
+    .split(",")
+    .map((k) => k.trim())
+    .filter((k) => k.length > 0)
+  if (keywords.length === 0) return content
+
+  // For summaries, incorporate keywords naturally into the content
+  if (content.includes("expertise in")) {
+    const keywordPhrase = keywords.slice(0, 3).join(", ")
+    content = content.replace("expertise in modern technologies", `expertise in ${keywordPhrase}`)
+  } else if (content.includes("with comprehensive experience")) {
+    const keywordPhrase = keywords.slice(0, 2).join(" and ")
+    content = content.replace("healthcare delivery", `${keywordPhrase}`)
+  } else if (content.includes("strong analytical skills")) {
+    const keywordPhrase = keywords.slice(0, 2).join(" and ")
+    content = content.replace("financial analysis", `${keywordPhrase}`)
+  } else if (content.includes("expertise in digital marketing")) {
+    const keywordPhrase = keywords.slice(0, 3).join(", ")
+    content = content.replace("digital marketing strategies", `${keywordPhrase}`)
+  } else if (content.includes("curriculum development")) {
+    const keywordPhrase = keywords.slice(0, 2).join(" and ")
+    content = content.replace("curriculum development", `${keywordPhrase}`)
+  }
+
+  // Add remaining keywords as additional skills/expertise
+  if (keywords.length > 3) {
+    const additionalKeywords = keywords.slice(3, 6).join(", ")
+    content += ` Specialized in ${additionalKeywords} with a focus on delivering exceptional results.`
+  }
+
+  return content
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const { section, userInput, jobTitle, industry, context } = await request.json()
+    const { section, userInput, jobTitle, industry, context, careerKeywords } = await request.json()
 
     const normalizedIndustry = industry?.toLowerCase() || "technology"
     const template =
@@ -118,6 +154,7 @@ export async function POST(request: NextRequest) {
     switch (section) {
       case "summary":
         content = template.summary.replace("{jobTitle}", jobTitle || "Professional")
+        content = incorporateCareerKeywords(content, careerKeywords)
         break
 
       case "experience":
@@ -126,6 +163,15 @@ export async function POST(request: NextRequest) {
 
       case "skills":
         content = template.skills.join(", ")
+        if (careerKeywords) {
+          const keywords = careerKeywords
+            .split(",")
+            .map((k) => k.trim())
+            .filter((k) => k.length > 0)
+          if (keywords.length > 0) {
+            content = keywords.concat(template.skills).join(", ")
+          }
+        }
         break
 
       default:
