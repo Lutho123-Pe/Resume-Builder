@@ -1,25 +1,35 @@
 "use client"
 
-import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Plus, Trash2 } from "lucide-react"
+import { Plus, Trash2, Sparkles } from "lucide-react"
 import { AIAssistant } from "@/components/ai-assistant"
+import { useForm, useFieldArray, useWatch } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import * as z from "zod"
 
-interface ExperienceItem {
-  id: string
-  company: string
-  position: string
-  startDate: string
-  endDate: string
-  current: boolean
-  description: string
-  achievements: string[]
-}
+// --- Zod Schema for Validation ---
+const ExperienceItemSchema = z.object({
+  id: z.string(),
+  company: z.string().min(1, { message: "Company name is required." }),
+  position: z.string().min(1, { message: "Position is required." }),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  current: z.boolean().default(false),
+  description: z.string().optional(),
+  achievements: z.array(z.string().min(1, "Achievement cannot be empty.")).optional(),
+})
+
+const ExperienceFormSchema = z.object({
+  experience: z.array(ExperienceItemSchema),
+})
+
+export type ExperienceItem = z.infer<typeof ExperienceItemSchema>
+export type ExperienceData = z.infer<typeof ExperienceFormSchema>
 
 interface ExperienceFormProps {
   data: ExperienceItem[]
@@ -27,10 +37,26 @@ interface ExperienceFormProps {
 }
 
 export function ExperienceForm({ data, onChange }: ExperienceFormProps) {
-  const [editingId, setEditingId] = useState<string | null>(null)
+  const form = useForm<ExperienceData>({
+    resolver: zodResolver(ExperienceFormSchema),
+    defaultValues: { experience: data },
+    mode: "onChange",
+  })
+
+  const { control, register, formState: { errors }, watch, setValue } = form
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "experience",
+  })
+
+  // Watch all fields and update parent state on change
+  const watchedFields = watch()
+  if (JSON.stringify(watchedFields.experience) !== JSON.stringify(data)) {
+    onChange(watchedFields.experience)
+  }
 
   const addExperience = () => {
-    const newExperience: ExperienceItem = {
+    append({
       id: Date.now().toString(),
       company: "",
       position: "",
@@ -39,57 +65,38 @@ export function ExperienceForm({ data, onChange }: ExperienceFormProps) {
       current: false,
       description: "",
       achievements: [],
-    }
-    onChange([...data, newExperience])
-    setEditingId(newExperience.id)
+    })
   }
 
-  const updateExperience = (id: string, field: keyof ExperienceItem, value: any) => {
-    onChange(data.map((exp) => (exp.id === id ? { ...exp, [field]: value } : exp)))
+  const addAchievement = (index: number) => {
+    const currentAchievements = form.getValues(`experience.${index}.achievements`) || []
+    setValue(`experience.${index}.achievements`, [...currentAchievements, ""], { shouldValidate: true })
   }
 
-  const removeExperience = (id: string) => {
-    onChange(data.filter((exp) => exp.id !== id))
+  const removeAchievement = (expIndex: number, achIndex: number) => {
+    const currentAchievements = form.getValues(`experience.${expIndex}.achievements`) || []
+    const newAchievements = currentAchievements.filter((_, i) => i !== achIndex)
+    setValue(`experience.${expIndex}.achievements`, newAchievements, { shouldValidate: true })
   }
 
-  const addAchievement = (id: string) => {
-    const experience = data.find((exp) => exp.id === id)
-    if (experience) {
-      updateExperience(id, "achievements", [...experience.achievements, ""])
-    }
-  }
-
-  const updateAchievement = (id: string, index: number, value: string) => {
-    const experience = data.find((exp) => exp.id === id)
-    if (experience) {
-      const newAchievements = [...experience.achievements]
-      newAchievements[index] = value
-      updateExperience(id, "achievements", newAchievements)
-    }
-  }
-
-  const removeAchievement = (id: string, index: number) => {
-    const experience = data.find((exp) => exp.id === id)
-    if (experience) {
-      const newAchievements = experience.achievements.filter((_, i) => i !== index)
-      updateExperience(id, "achievements", newAchievements)
-    }
+  const handleContentGenerated = (expIndex: number, content: string) => {
+    setValue(`experience.${expIndex}.description`, content, { shouldValidate: true })
   }
 
   return (
     <div className="space-y-4">
-      {data.map((experience) => (
-        <Card key={experience.id}>
+      {fields.map((field, index) => (
+        <Card key={field.id}>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">
-                {experience.position || "New Position"}
-                {experience.company && ` at ${experience.company}`}
+                {watch(`experience.${index}.position`) || "New Position"}
+                {watch(`experience.${index}.company`) && ` at ${watch(`experience.${index}.company`)}`}
               </CardTitle>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => removeExperience(experience.id)}
+                onClick={() => remove(index)}
                 className="text-destructive hover:text-destructive"
               >
                 <Trash2 className="w-4 h-4" />
@@ -98,98 +105,106 @@ export function ExperienceForm({ data, onChange }: ExperienceFormProps) {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Job Title */}
               <div>
-                <Label htmlFor={`position-${experience.id}`}>Job Title *</Label>
+                <Label htmlFor={`experience.${index}.position`}>Job Title *</Label>
                 <Input
-                  id={`position-${experience.id}`}
-                  value={experience.position}
-                  onChange={(e) => updateExperience(experience.id, "position", e.target.value)}
+                  id={`experience.${index}.position`}
+                  {...register(`experience.${index}.position`)}
                   placeholder="Software Engineer"
                 />
+                {errors.experience?.[index]?.position && <p className="text-red-500 text-xs mt-1">{errors.experience[index].position.message}</p>}
               </div>
+              {/* Company */}
               <div>
-                <Label htmlFor={`company-${experience.id}`}>Company *</Label>
+                <Label htmlFor={`experience.${index}.company`}>Company *</Label>
                 <Input
-                  id={`company-${experience.id}`}
-                  value={experience.company}
-                  onChange={(e) => updateExperience(experience.id, "company", e.target.value)}
+                  id={`experience.${index}.company`}
+                  {...register(`experience.${index}.company`)}
                   placeholder="Tech Corp"
                 />
+                {errors.experience?.[index]?.company && <p className="text-red-500 text-xs mt-1">{errors.experience[index].company.message}</p>}
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Start Date */}
               <div>
-                <Label htmlFor={`startDate-${experience.id}`}>Start Date</Label>
+                <Label htmlFor={`experience.${index}.startDate`}>Start Date</Label>
                 <Input
-                  id={`startDate-${experience.id}`}
+                  id={`experience.${index}.startDate`}
                   type="month"
-                  value={experience.startDate}
-                  onChange={(e) => updateExperience(experience.id, "startDate", e.target.value)}
+                  {...register(`experience.${index}.startDate`)}
                 />
               </div>
+              {/* End Date */}
               <div>
-                <Label htmlFor={`endDate-${experience.id}`}>End Date</Label>
+                <Label htmlFor={`experience.${index}.endDate`}>End Date</Label>
                 <Input
-                  id={`endDate-${experience.id}`}
+                  id={`experience.${index}.endDate`}
                   type="month"
-                  value={experience.endDate}
-                  onChange={(e) => updateExperience(experience.id, "endDate", e.target.value)}
-                  disabled={experience.current}
+                  {...register(`experience.${index}.endDate`)}
+                  disabled={watch(`experience.${index}.current`)}
                 />
                 <div className="flex items-center space-x-2 mt-2">
                   <Checkbox
-                    id={`current-${experience.id}`}
-                    checked={experience.current}
-                    onCheckedChange={(checked) => updateExperience(experience.id, "current", checked)}
+                    id={`experience.${index}.current`}
+                    checked={watch(`experience.${index}.current`)}
+                    onCheckedChange={(checked) => setValue(`experience.${index}.current`, checked as boolean)}
                   />
-                  <Label htmlFor={`current-${experience.id}`} className="text-sm">
+                  <Label htmlFor={`experience.${index}.current`} className="text-sm">
                     I currently work here
                   </Label>
                 </div>
               </div>
             </div>
 
+            {/* Job Description */}
             <div>
-              <Label htmlFor={`description-${experience.id}`}>Job Description</Label>
+              <div className="flex items-center justify-between mb-2">
+                <Label htmlFor={`experience.${index}.description`}>Job Description</Label>
+                <Button variant="ghost" size="sm" className="h-auto p-1 text-secondary">
+                  <Sparkles className="w-3 h-3 mr-1" />
+                  AI Generate
+                </Button>
+              </div>
               <Textarea
-                id={`description-${experience.id}`}
-                value={experience.description}
-                onChange={(e) => updateExperience(experience.id, "description", e.target.value)}
+                id={`experience.${index}.description`}
+                {...register(`experience.${index}.description`)}
                 placeholder="Describe your role and responsibilities..."
                 rows={3}
               />
               <div className="mt-2">
                 <AIAssistant
                   section="experience"
-                  userInput={`${experience.position} at ${experience.company}`}
-                  jobTitle={experience.position || "Professional"}
+                  userInput={`${watch(`experience.${index}.position`)} at ${watch(`experience.${index}.company`)}`}
+                  jobTitle={watch(`experience.${index}.position`) || "Professional"}
                   industry="Technology"
-                  onContentGenerated={(content) => updateExperience(experience.id, "description", content)}
+                  onContentGenerated={(content) => handleContentGenerated(index, content)}
                 />
               </div>
             </div>
 
+            {/* Key Achievements */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <Label>Key Achievements</Label>
-                <Button variant="ghost" size="sm" onClick={() => addAchievement(experience.id)} className="h-auto p-1">
+                <Button variant="ghost" size="sm" onClick={() => addAchievement(index)} className="h-auto p-1">
                   <Plus className="w-3 h-3 mr-1" />
                   Add Achievement
                 </Button>
               </div>
               <div className="space-y-2">
-                {experience.achievements.map((achievement, index) => (
-                  <div key={index} className="flex gap-2">
+                {watch(`experience.${index}.achievements`)?.map((achievement, achIndex) => (
+                  <div key={achIndex} className="flex gap-2">
                     <Input
-                      value={achievement}
-                      onChange={(e) => updateAchievement(experience.id, index, e.target.value)}
+                      {...register(`experience.${index}.achievements.${achIndex}`)}
                       placeholder="Increased team productivity by 25%..."
                     />
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => removeAchievement(experience.id, index)}
+                      onClick={() => removeAchievement(index, achIndex)}
                       className="text-destructive hover:text-destructive"
                     >
                       <Trash2 className="w-4 h-4" />

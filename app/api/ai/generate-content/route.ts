@@ -1,182 +1,72 @@
 import { type NextRequest, NextResponse } from "next/server"
+import OpenAI from "openai"
 
-const industryTemplates = {
-  technology: {
-    summary:
-      "Experienced {jobTitle} with expertise in modern technologies and agile development practices. Proven track record of delivering scalable solutions and driving technical innovation. Strong problem-solving skills and collaborative approach to software development.",
-    experience: [
-      "Developed and maintained scalable applications using modern frameworks and technologies",
-      "Collaborated with cross-functional teams to deliver high-quality software solutions",
-      "Implemented best practices for code quality, testing, and deployment processes",
-      "Optimized application performance and resolved complex technical challenges",
-      "Mentored junior developers and contributed to technical documentation",
-    ],
-    skills: [
-      "JavaScript",
-      "React",
-      "Node.js",
-      "Python",
-      "SQL",
-      "Git",
-      "Agile",
-      "Problem Solving",
-      "Team Collaboration",
-    ],
-  },
-  healthcare: {
-    summary:
-      "Dedicated {jobTitle} with comprehensive experience in healthcare delivery and patient care. Committed to maintaining high standards of clinical excellence while ensuring patient safety and satisfaction. Strong communication and analytical skills.",
-    experience: [
-      "Provided exceptional patient care while maintaining strict adherence to safety protocols",
-      "Collaborated with multidisciplinary teams to develop comprehensive treatment plans",
-      "Maintained accurate patient records and documentation in compliance with regulations",
-      "Implemented quality improvement initiatives to enhance patient outcomes",
-      "Educated patients and families on treatment procedures and care management",
-    ],
-    skills: [
-      "Patient Care",
-      "Clinical Assessment",
-      "Medical Documentation",
-      "HIPAA Compliance",
-      "Team Collaboration",
-      "Critical Thinking",
-      "Communication",
-    ],
-  },
-  finance: {
-    summary:
-      "Results-driven {jobTitle} with strong analytical skills and expertise in financial analysis and risk management. Proven ability to drive business growth through data-driven insights and strategic financial planning.",
-    experience: [
-      "Conducted comprehensive financial analysis to support strategic business decisions",
-      "Developed and maintained financial models and forecasting tools",
-      "Ensured compliance with regulatory requirements and internal policies",
-      "Collaborated with stakeholders to optimize financial performance and reduce costs",
-      "Prepared detailed reports and presentations for senior management",
-    ],
-    skills: [
-      "Financial Analysis",
-      "Excel",
-      "Financial Modeling",
-      "Risk Management",
-      "Regulatory Compliance",
-      "Data Analysis",
-      "Strategic Planning",
-    ],
-  },
-  marketing: {
-    summary:
-      "Creative and data-driven {jobTitle} with expertise in digital marketing strategies and brand management. Proven track record of developing successful campaigns that drive engagement and business growth.",
-    experience: [
-      "Developed and executed comprehensive marketing campaigns across multiple channels",
-      "Analyzed market trends and consumer behavior to inform strategic decisions",
-      "Managed social media presence and created engaging content for target audiences",
-      "Collaborated with design and content teams to produce high-quality marketing materials",
-      "Tracked campaign performance and optimized strategies based on data insights",
-    ],
-    skills: [
-      "Digital Marketing",
-      "Social Media",
-      "Content Creation",
-      "Analytics",
-      "SEO/SEM",
-      "Brand Management",
-      "Campaign Management",
-    ],
-  },
-  education: {
-    summary:
-      "Passionate {jobTitle} dedicated to fostering student learning and academic excellence. Experienced in curriculum development and innovative teaching methodologies that engage diverse learners.",
-    experience: [
-      "Designed and implemented engaging lesson plans aligned with curriculum standards",
-      "Assessed student progress and provided individualized support and feedback",
-      "Collaborated with colleagues and parents to support student success",
-      "Integrated technology and innovative teaching methods to enhance learning",
-      "Participated in professional development and continuous improvement initiatives",
-    ],
-    skills: [
-      "Curriculum Development",
-      "Classroom Management",
-      "Student Assessment",
-      "Educational Technology",
-      "Communication",
-      "Adaptability",
-      "Mentoring",
-    ],
-  },
-}
+// Initialize OpenAI client
+const openai = new OpenAI()
 
-function incorporateCareerKeywords(content: string, careerKeywords: string): string {
-  if (!careerKeywords) return content
+async function generateContentWithLLM(section: string, userInput: string, jobTitle: string, industry: string, context?: string) {
+  let systemPrompt = ""
+  let userPrompt = ""
 
-  const keywords = careerKeywords
-    .split(",")
-    .map((k) => k.trim())
-    .filter((k) => k.length > 0)
-  if (keywords.length === 0) return content
+  switch (section) {
+    case "summary":
+      systemPrompt = `You are an expert resume writer. Your task is to generate a compelling, 3-4 sentence professional summary for a resume. The summary must be tailored for a ${jobTitle} role in the ${industry} industry. It should highlight key skills, experience, and quantifiable achievements (if provided in the context).`
+      userPrompt = `Generate a professional summary.
+Target Role: ${jobTitle}
+Target Industry: ${industry}
+Career Keywords: ${userInput.split("Career Focus:")[1]?.trim() || "None"}
+Context/Current Summary: ${context || "No current summary provided."}`
+      break
 
-  // For summaries, incorporate keywords naturally into the content
-  if (content.includes("expertise in")) {
-    const keywordPhrase = keywords.slice(0, 3).join(", ")
-    content = content.replace("expertise in modern technologies", `expertise in ${keywordPhrase}`)
-  } else if (content.includes("with comprehensive experience")) {
-    const keywordPhrase = keywords.slice(0, 2).join(" and ")
-    content = content.replace("healthcare delivery", `${keywordPhrase}`)
-  } else if (content.includes("strong analytical skills")) {
-    const keywordPhrase = keywords.slice(0, 2).join(" and ")
-    content = content.replace("financial analysis", `${keywordPhrase}`)
-  } else if (content.includes("expertise in digital marketing")) {
-    const keywordPhrase = keywords.slice(0, 3).join(", ")
-    content = content.replace("digital marketing strategies", `${keywordPhrase}`)
-  } else if (content.includes("curriculum development")) {
-    const keywordPhrase = keywords.slice(0, 2).join(" and ")
-    content = content.replace("curriculum development", `${keywordPhrase}`)
+    case "experience":
+      systemPrompt = `You are an expert resume writer. Your task is to generate 3-5 high-impact, quantifiable bullet points for a work experience section. The bullet points must be tailored for a ${jobTitle} role in the ${industry} industry, focusing on achievements and results using the STAR method (Situation, Task, Action, Result).`
+      userPrompt = `Generate 3-5 achievement-focused bullet points for the following experience:
+Job Title and Company: ${userInput}
+Context/Current Description: ${context || "No current description provided."}`
+      break
+
+    case "skills":
+      systemPrompt = `You are an expert career coach. Your task is to generate a list of 10-15 highly relevant technical and soft skills for a ${jobTitle} role in the ${industry} industry. The list should be comma-separated.`
+      userPrompt = `Generate a comma-separated list of skills for a ${jobTitle} in the ${industry} industry.`
+      break
+
+    default:
+      throw new Error("Invalid section for content generation.")
   }
 
-  // Add remaining keywords as additional skills/expertise
-  if (keywords.length > 3) {
-    const additionalKeywords = keywords.slice(3, 6).join(", ")
-    content += ` Specialized in ${additionalKeywords} with a focus on delivering exceptional results.`
-  }
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4.1-mini",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      temperature: 0.7,
+    })
 
-  return content
+    const content = response.choices[0].message.content
+    if (!content) {
+      throw new Error("LLM returned no content.")
+    }
+    return content.trim()
+  } catch (error) {
+    console.error("LLM content generation failed:", error)
+    throw new Error("Failed to generate content from LLM.")
+  }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const { section, userInput, jobTitle, industry, context, careerKeywords } = await request.json()
 
-    const normalizedIndustry = industry?.toLowerCase() || "technology"
-    const template =
-      industryTemplates[normalizedIndustry as keyof typeof industryTemplates] || industryTemplates.technology
-
-    let content = ""
-
-    switch (section) {
-      case "summary":
-        content = template.summary.replace("{jobTitle}", jobTitle || "Professional")
-        content = incorporateCareerKeywords(content, careerKeywords)
-        break
-
-      case "experience":
-        content = template.experience.join("\n• ")
-        break
-
-      case "skills":
-        content = template.skills.join(", ")
-        if (careerKeywords) {
-          const keywords = careerKeywords
-            .split(",")
-            .map((k) => k.trim())
-            .filter((k) => k.length > 0)
-          if (keywords.length > 0) {
-            content = keywords.concat(template.skills).join(", ")
-          }
-        }
-        break
-
-      default:
-        throw new Error("Invalid section")
+    if (!section || !userInput || !jobTitle || !industry) {
+      return NextResponse.json(
+        { error: "Missing required parameters for content generation" },
+        { status: 400 },
+      )
     }
+
+    const content = await generateContentWithLLM(section, userInput, jobTitle, industry, context)
 
     return NextResponse.json({ content })
   } catch (error) {
