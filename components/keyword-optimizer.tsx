@@ -8,8 +8,7 @@ import { Progress } from "@/components/ui/progress"
 import { Loader2, Target, TrendingUp, AlertCircle } from "lucide-react"
 
 interface KeywordOptimizerProps {
-  content: string
-  industry: string
+  resumeData: any
   jobDescription?: string
 }
 
@@ -20,11 +19,13 @@ interface OptimizationResult {
   suggestions: string[]
 }
 
-export function KeywordOptimizer({ content, industry, jobDescription }: KeywordOptimizerProps) {
+export function KeywordOptimizer({ resumeData, jobDescription }: KeywordOptimizerProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [result, setResult] = useState<OptimizationResult | null>(null)
 
   const analyzeKeywords = async () => {
+    const content = getResumeContentString(resumeData)
+    const industry = resumeData.personalInfo.careerKeywords || "Technology"
     setIsAnalyzing(true)
     try {
       const response = await fetch("/api/ai/optimize-keywords", {
@@ -61,7 +62,7 @@ export function KeywordOptimizer({ content, industry, jobDescription }: KeywordO
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Button onClick={analyzeKeywords} disabled={isAnalyzing || !content.trim()} className="w-full" size="sm">
+        <Button onClick={analyzeKeywords} disabled={isAnalyzing || !resumeData.personalInfo.fullName} className="w-full" size="sm">
           {isAnalyzing ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -87,7 +88,7 @@ export function KeywordOptimizer({ content, industry, jobDescription }: KeywordO
             </div>
 
             {/* Missing Keywords */}
-            {result.missingKeywords.length > 0 && (
+            {(result.missingKeywords?.length ?? 0) > 0 && (
               <div className="space-y-2">
                 <h4 className="text-sm font-medium flex items-center gap-2">
                   <AlertCircle className="h-4 w-4 text-yellow-600" />
@@ -104,7 +105,7 @@ export function KeywordOptimizer({ content, industry, jobDescription }: KeywordO
             )}
 
             {/* Suggestions */}
-            {result.suggestions.length > 0 && (
+            {(result.suggestions?.length ?? 0) > 0 && (
               <div className="space-y-2">
                 <h4 className="text-sm font-medium flex items-center gap-2">
                   <TrendingUp className="h-4 w-4 text-blue-600" />
@@ -125,4 +126,26 @@ export function KeywordOptimizer({ content, industry, jobDescription }: KeywordO
       </CardContent>
     </Card>
   )
+}
+
+function getResumeContentString(resumeData: any): string {
+  const { personalInfo, experience, education, skills } = resumeData
+
+  let content = `${personalInfo.fullName}\n${personalInfo.summary}\n\n`
+
+  experience.forEach((exp: any) => {
+    content += `${exp.position} at ${exp.company}\n${exp.description}\n`
+    exp.achievements.forEach((achievement: string) => {
+      content += `• ${achievement}\n`
+    })
+    content += "\n"
+  })
+
+  education.forEach((edu: any) => {
+    content += `${edu.degree} in ${edu.field} from ${edu.institution}\n`
+  })
+
+  content += `\nSkills: ${[...skills.technical, ...skills.soft].join(", ")}`
+
+  return content
 }

@@ -268,9 +268,9 @@ export function ResumeBuilder() {
             </Card>
 
             {/* AI Analysis Tools */}
-            {showKeywordOptimizer && <KeywordOptimizer content={getResumeContentString()} industry="Technology" />}
+            {showKeywordOptimizer && <KeywordOptimizer resumeData={resumeData} />}
 
-            {showJobMatcher && <JobMatcher resumeContent={getResumeContentString()} />}
+            {showJobMatcher && <JobMatcher resumeData={resumeData} />}
 
             {showIndustryOptimizer && <IndustryOptimizer resumeData={resumeData} />}
           </div>
