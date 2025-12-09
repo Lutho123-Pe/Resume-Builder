@@ -1,8 +1,9 @@
-import { type NextRequest, NextResponse } from "next/server"
-import OpenAI from "openai"
+import { GoogleGenAI } from "@google/genai"
+import { NextRequest, NextResponse } from "next/server"
 
-// Initialize OpenAI client
-const openai = new OpenAI()
+// Initialize Google GenAI client
+// It will automatically look for the GEMINI_API_KEY environment variable
+const ai = new GoogleGenAI({})
 
 // Define the expected output structure for the LLM
 const optimizationSchema = {
@@ -145,17 +146,19 @@ ${resumeContent}
 ---`
 
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4.1-mini", // Using a capable model for structured output
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash", // Using a capable model for structured output
+      contents: [
+        { role: "user", parts: [{ text: systemPrompt + userPrompt }] }
       ],
-      response_format: { type: "json_object" },
-      temperature: 0.3,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: optimizationSchema,
+        temperature: 0.3,
+      }
     })
 
-    const jsonText = response.choices[0].message.content
+    const jsonText = response.text
     if (!jsonText) {
       throw new Error("LLM returned no content.")
     }
