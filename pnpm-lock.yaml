@@ -10,7 +10,7 @@ importers:
     dependencies:
       '@hookform/resolvers':
         specifier: ^3.10.0
-        version: 3.10.0(react-hook-form@7.60.0(react@18.0.0))
+        version: 3.10.0(react-hook-form@7.68.0(react@18.0.0))
       '@radix-ui/react-accordion':
         specifier: latest
         version: 1.2.12(@types/react-dom@18.0.0)(@types/react@18.0.0)(react-dom@18.0.0(react@18.0.0))(react@18.0.0)
@@ -147,8 +147,8 @@ importers:
         specifier: ^18
         version: 18.0.0(react@18.0.0)
       react-hook-form:
-        specifier: ^7.60.0
-        version: 7.60.0(react@18.0.0)
+        specifier: ^7.68.0
+        version: 7.68.0(react@18.0.0)
       react-resizable-panels:
         specifier: latest
         version: 3.0.5(react-dom@18.0.0(react@18.0.0))(react@18.0.0)
@@ -177,7 +177,7 @@ importers:
         specifier: latest
         version: 4.5.1(vue@3.5.21(typescript@5.0.2))
       zod:
-        specifier: 3.25.67
+        specifier: ^3.25.67
         version: 3.25.67
     devDependencies:
       '@tailwindcss/postcss':
@@ -2233,8 +2233,8 @@ packages:
     peerDependencies:
       react: ^18.0.0
 
-  react-hook-form@7.60.0:
-    resolution: {integrity: sha512-SBrYOvMbDB7cV8ZfNpaiLcgjH/a1c7aK0lK+aNigpf4xWLO8q+o4tcvVurv3c4EOyzn/3dCsYt4GKD42VvJ/+A==}
+  react-hook-form@7.68.0:
+    resolution: {integrity: sha512-oNN3fjrZ/Xo40SWlHf1yCjlMK417JxoSJVUXQjGdvdRCU07NTFei1i1f8ApUAts+IVh14e4EdakeLEA+BEAs/Q==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       react: ^16.8.0 || ^17 || ^18 || ^19
@@ -2676,9 +2676,9 @@ snapshots:
 
   '@floating-ui/utils@0.2.10': {}
 
-  '@hookform/resolvers@3.10.0(react-hook-form@7.60.0(react@18.0.0))':
+  '@hookform/resolvers@3.10.0(react-hook-form@7.68.0(react@18.0.0))':
     dependencies:
-      react-hook-form: 7.60.0(react@18.0.0)
+      react-hook-form: 7.68.0(react@18.0.0)
 
   '@isaacs/fs-minipass@4.0.1':
     dependencies:
@@ -4394,7 +4394,7 @@ snapshots:
       react: 18.0.0
       scheduler: 0.21.0
 
-  react-hook-form@7.60.0(react@18.0.0):
+  react-hook-form@7.68.0(react@18.0.0):
     dependencies:
       react: 18.0.0
 
