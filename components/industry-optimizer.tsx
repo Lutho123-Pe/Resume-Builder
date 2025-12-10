@@ -177,7 +177,7 @@ export function IndustryOptimizer({ resumeData }: IndustryOptimizerProps) {
                   Industry Keywords to Add
                 </h4>
                 <div className="flex flex-wrap gap-1">
-                  {Array.isArray(optimization.industryKeywords) && optimization.industryKeywords.map((keyword, index) => (
+                  {optimization.industryKeywords.map((keyword, index) => (
                     <Badge key={index} variant="outline" className="text-xs border-blue-200 text-blue-700">
                       {keyword}
                     </Badge>
@@ -185,7 +185,7 @@ export function IndustryOptimizer({ resumeData }: IndustryOptimizerProps) {
                 </div>
               </div>
 
-              {Array.isArray(optimization.experienceReframing) && optimization.experienceReframing.length > 0 && (
+              {optimization.experienceReframing.length > 0 && (
                 <div className="space-y-2">
                   <h4 className="text-sm font-medium flex items-center gap-2">
                     <Briefcase className="h-4 w-4 text-purple-600" />
@@ -204,7 +204,7 @@ export function IndustryOptimizer({ resumeData }: IndustryOptimizerProps) {
             </TabsContent>
 
             <TabsContent value="skills" className="space-y-3">
-              {Array.isArray(optimization.skillsGaps) && optimization.skillsGaps.map((gap, index) => (
+              {optimization.skillsGaps.map((gap, index) => (
                 <div key={index} className="p-3 border rounded space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="font-medium text-sm">{gap.skill}</span>
@@ -216,7 +216,7 @@ export function IndustryOptimizer({ resumeData }: IndustryOptimizerProps) {
             </TabsContent>
 
             <TabsContent value="growth" className="space-y-3">
-              {Array.isArray(optimization.certifications) && optimization.certifications.length > 0 && (
+              {optimization.certifications.length > 0 && (
                 <div className="space-y-2">
                   <h4 className="text-sm font-medium flex items-center gap-2">
                     <Award className="h-4 w-4 text-yellow-600" />
@@ -236,7 +236,7 @@ export function IndustryOptimizer({ resumeData }: IndustryOptimizerProps) {
                 </div>
               )}
 
-              {Array.isArray(optimization.industryTrends) && optimization.industryTrends.length > 0 && (
+              {optimization.industryTrends.length > 0 && (
                 <div className="space-y-2">
                   <h4 className="text-sm font-medium flex items-center gap-2">
                     <TrendingUp className="h-4 w-4 text-green-600" />
@@ -255,7 +255,7 @@ export function IndustryOptimizer({ resumeData }: IndustryOptimizerProps) {
             </TabsContent>
 
             <TabsContent value="tips" className="space-y-3">
-              {Array.isArray(optimization.networkingSuggestions) && optimization.networkingSuggestions.length > 0 && (
+              {optimization.networkingSuggestions.length > 0 && (
                 <div className="space-y-2">
                   <h4 className="text-sm font-medium flex items-center gap-2">
                     <Users className="h-4 w-4 text-blue-600" />
@@ -272,24 +272,7 @@ export function IndustryOptimizer({ resumeData }: IndustryOptimizerProps) {
                 </div>
               )}
 
-              {Array.isArray(optimization.portfolioRecommendations) && optimization.portfolioRecommendations.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="text-sm font-medium flex items-center gap-2">
-                    <Briefcase className="h-4 w-4 text-purple-600" />
-                    Portfolio Recommendations
-                  </h4>
-                  <ul className="text-xs space-y-1">
-                    {optimization.portfolioRecommendations.slice(0, 3).map((tip, index) => (
-                      <li key={index} className="flex items-start gap-2 text-muted-foreground">
-                        <span className="text-primary">•</span>
-                        {tip}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {Array.isArray(optimization.interviewTips) && optimization.interviewTips.length > 0 && (
+              {optimization.interviewTips.length > 0 && (
                 <div className="space-y-2">
                   <h4 className="text-sm font-medium flex items-center gap-2">
                     <Lightbulb className="h-4 w-4 text-yellow-600" />

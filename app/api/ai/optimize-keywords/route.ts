@@ -30,13 +30,12 @@ async function analyzeKeywordsWithLLM(content: string, industry: string, jobDesc
   const systemPrompt = `You are an expert Applicant Tracking System (ATS) and career coach. Your task is to analyze a resume's content against a target industry and job description (if provided) to determine its ATS compatibility.
 
 Analyze the provided resume content and generate a structured JSON response based on the following criteria:
-1. **ATS Score (1-10):** Evaluate the resume's overall compatibility. Factors to consider include keyword density, use of industry-specific terminology, and clear section headings.
+1. **ATS Score (1-10):** Evaluate the resume's overall compatibility. Factors include keyword density, use of industry-specific terminology, and clear formatting (which you must infer from the text structure).
 2. **Missing Keywords:** Identify 5-8 critical keywords for the ${industry} industry (and the specific job if provided) that are absent from the resume.
 3. **Suggestions:** Provide 3-5 specific, actionable suggestions to improve the resume's ATS score and keyword alignment.
 
 The user's target industry is: ${industry}.
 The job description (if provided) is: ${jobDescription || "N/A"}.
-You MUST return a JSON object that strictly adheres to the provided schema.
 `
 
   const userPrompt = `Analyze the following resume content:
@@ -52,6 +51,7 @@ ${content}
         { role: "user", content: userPrompt },
       ],
       response_format: { type: "json_object" },
+      tool_choice: "none",
       temperature: 0.2,
     })
 
@@ -82,9 +82,14 @@ export async function POST(request: NextRequest) {
     const analysis = await analyzeKeywordsWithLLM(content, industry, jobDescription)
 
     // The frontend expects: missingKeywords, atsScore, suggestions.
-    // The previous mock included a `keywordDensity` object which is not needed with the new LLM structure.
-    // We will return the LLM analysis directly.
-    return NextResponse.json(analysis)
+    // It also expects keywordDensity, which the old mock provided as a string.
+    // I will add a placeholder for keywordDensity for compatibility, but the real value is in the LLM analysis.
+    const finalAnalysis = {
+      ...analysis,
+      keywordDensity: { placeholder: 0 }, // Placeholder for frontend compatibility
+    }
+
+    return NextResponse.json(finalAnalysis)
   } catch (error) {
     console.error("Keyword optimization error:", error)
     return NextResponse.json({ error: "Failed to optimize keywords" }, { status: 500 })

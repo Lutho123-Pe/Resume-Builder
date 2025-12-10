@@ -1,30 +1,19 @@
 "use client"
-
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Plus, Trash2 } from "lucide-react"
-import { useForm, useFieldArray } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
 
-// --- Zod Schema for Validation ---
-const EducationItemSchema = z.object({
-  id: z.string(),
-  institution: z.string().min(1, { message: "Institution name is required." }),
-  degree: z.string().min(1, { message: "Degree is required." }),
-  field: z.string().min(1, { message: "Field of study is required." }),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
-  gpa: z.string().optional(),
-})
-
-const EducationFormSchema = z.object({
-  education: z.array(EducationItemSchema),
-})
-
-export type EducationItem = z.infer<typeof EducationItemSchema>
+interface EducationItem {
+  id: string
+  institution: string
+  degree: string
+  field: string
+  startDate: string
+  endDate: string
+  gpa?: string
+}
 
 interface EducationFormProps {
   data: EducationItem[]
@@ -32,26 +21,8 @@ interface EducationFormProps {
 }
 
 export function EducationForm({ data, onChange }: EducationFormProps) {
-  const form = useForm<z.infer<typeof EducationFormSchema>>({
-    resolver: zodResolver(EducationFormSchema),
-    defaultValues: { education: data },
-    mode: "onChange",
-  })
-
-  const { control, register, formState: { errors }, watch } = form
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: "education",
-  })
-
-  // Watch all fields and update parent state on change
-  const watchedFields = watch()
-  if (JSON.stringify(watchedFields.education) !== JSON.stringify(data)) {
-    onChange(watchedFields.education)
-  }
-
   const addEducation = () => {
-    append({
+    const newEducation: EducationItem = {
       id: Date.now().toString(),
       institution: "",
       degree: "",
@@ -59,23 +30,32 @@ export function EducationForm({ data, onChange }: EducationFormProps) {
       startDate: "",
       endDate: "",
       gpa: "",
-    })
+    }
+    onChange([...data, newEducation])
+  }
+
+  const updateEducation = (id: string, field: keyof EducationItem, value: string) => {
+    onChange(data.map((edu) => (edu.id === id ? { ...edu, [field]: value } : edu)))
+  }
+
+  const removeEducation = (id: string) => {
+    onChange(data.filter((edu) => edu.id !== id))
   }
 
   return (
     <div className="space-y-4">
-      {fields.map((field, index) => (
-        <Card key={field.id}>
+      {data.map((education) => (
+        <Card key={education.id}>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">
-                {watch(`education.${index}.degree`) || "New Education"}
-                {watch(`education.${index}.institution`) && ` at ${watch(`education.${index}.institution`)}`}
+                {education.degree || "New Education"}
+                {education.institution && ` at ${education.institution}`}
               </CardTitle>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => remove(index)}
+                onClick={() => removeEducation(education.id)}
                 className="text-destructive hover:text-destructive"
               >
                 <Trash2 className="w-4 h-4" />
@@ -84,64 +64,61 @@ export function EducationForm({ data, onChange }: EducationFormProps) {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Institution */}
               <div>
-                <Label htmlFor={`education.${index}.institution`}>Institution *</Label>
+                <Label htmlFor={`institution-${education.id}`}>Institution *</Label>
                 <Input
-                  id={`education.${index}.institution`}
-                  {...register(`education.${index}.institution`)}
+                  id={`institution-${education.id}`}
+                  value={education.institution}
+                  onChange={(e) => updateEducation(education.id, "institution", e.target.value)}
                   placeholder="University of Technology"
                 />
-                {errors.education?.[index]?.institution && <p className="text-red-500 text-xs mt-1">{errors.education[index].institution.message}</p>}
               </div>
-              {/* Degree */}
               <div>
-                <Label htmlFor={`education.${index}.degree`}>Degree *</Label>
+                <Label htmlFor={`degree-${education.id}`}>Degree *</Label>
                 <Input
-                  id={`education.${index}.degree`}
-                  {...register(`education.${index}.degree`)}
+                  id={`degree-${education.id}`}
+                  value={education.degree}
+                  onChange={(e) => updateEducation(education.id, "degree", e.target.value)}
                   placeholder="Bachelor of Science"
                 />
-                {errors.education?.[index]?.degree && <p className="text-red-500 text-xs mt-1">{errors.education[index].degree.message}</p>}
               </div>
             </div>
 
-            {/* Field of Study */}
             <div>
-              <Label htmlFor={`education.${index}.field`}>Field of Study *</Label>
+              <Label htmlFor={`field-${education.id}`}>Field of Study *</Label>
               <Input
-                id={`education.${index}.field`}
-                {...register(`education.${index}.field`)}
+                id={`field-${education.id}`}
+                value={education.field}
+                onChange={(e) => updateEducation(education.id, "field", e.target.value)}
                 placeholder="Computer Science"
               />
-              {errors.education?.[index]?.field && <p className="text-red-500 text-xs mt-1">{errors.education[index].field.message}</p>}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Start Date */}
               <div>
-                <Label htmlFor={`education.${index}.startDate`}>Start Date</Label>
+                <Label htmlFor={`startDate-${education.id}`}>Start Date</Label>
                 <Input
-                  id={`education.${index}.startDate`}
+                  id={`startDate-${education.id}`}
                   type="month"
-                  {...register(`education.${index}.startDate`)}
+                  value={education.startDate}
+                  onChange={(e) => updateEducation(education.id, "startDate", e.target.value)}
                 />
               </div>
-              {/* End Date */}
               <div>
-                <Label htmlFor={`education.${index}.endDate`}>End Date</Label>
+                <Label htmlFor={`endDate-${education.id}`}>End Date</Label>
                 <Input
-                  id={`education.${index}.endDate`}
+                  id={`endDate-${education.id}`}
                   type="month"
-                  {...register(`education.${index}.endDate`)}
+                  value={education.endDate}
+                  onChange={(e) => updateEducation(education.id, "endDate", e.target.value)}
                 />
               </div>
-              {/* GPA */}
               <div>
-                <Label htmlFor={`education.${index}.gpa`}>GPA (Optional)</Label>
+                <Label htmlFor={`gpa-${education.id}`}>GPA (Optional)</Label>
                 <Input
-                  id={`education.${index}.gpa`}
-                  {...register(`education.${index}.gpa`)}
+                  id={`gpa-${education.id}`}
+                  value={education.gpa}
+                  onChange={(e) => updateEducation(education.id, "gpa", e.target.value)}
                   placeholder="3.8"
                 />
               </div>
