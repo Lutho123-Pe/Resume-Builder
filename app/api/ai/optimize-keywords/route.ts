@@ -1,9 +1,8 @@
-import { GoogleGenAI } from "@google/genai"
-import { NextRequest, NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
+import OpenAI from "openai"
 
-// Initialize Google GenAI client
-// It will automatically look for the GEMINI_API_KEY environment variable
-const ai = new GoogleGenAI({})
+// Initialize OpenAI client
+const openai = new OpenAI()
 
 // Define the expected output structure for the LLM
 const optimizationSchema = {
@@ -46,19 +45,17 @@ ${content}
 ---`
 
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash", // Using a capable model for structured output
-      contents: [
-        { role: "user", parts: [{ text: systemPrompt + userPrompt }] }
+    const response = await openai.chat.completions.create({
+      model: "gpt-4.1-mini", // Using a capable model for structured output
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
       ],
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: optimizationSchema,
-        temperature: 0.2,
-      }
+      response_format: { type: "json_object" },
+      temperature: 0.2,
     })
 
-    const jsonText = response.text
+    const jsonText = response.choices[0].message.content
     if (!jsonText) {
       throw new Error("LLM returned no content.")
     }
@@ -84,6 +81,9 @@ export async function POST(request: NextRequest) {
 
     const analysis = await analyzeKeywordsWithLLM(content, industry, jobDescription)
 
+    // The frontend expects: missingKeywords, atsScore, suggestions.
+    // The previous mock included a `keywordDensity` object which is not needed with the new LLM structure.
+    // We will return the LLM analysis directly.
     return NextResponse.json(analysis)
   } catch (error) {
     console.error("Keyword optimization error:", error)

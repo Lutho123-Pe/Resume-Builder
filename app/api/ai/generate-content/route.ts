@@ -1,9 +1,8 @@
-import { GoogleGenAI } from "@google/genai"
-import { NextRequest, NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
+import OpenAI from "openai"
 
-// Initialize Google GenAI client
-// It will automatically look for the GEMINI_API_KEY environment variable
-const ai = new GoogleGenAI({})
+// Initialize OpenAI client
+const openai = new OpenAI()
 
 async function generateContentWithLLM(section: string, userInput: string, jobTitle: string, industry: string, context?: string) {
   let systemPrompt = ""
@@ -36,15 +35,16 @@ Context/Current Description: ${context || "No current description provided."}`
   }
 
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: [
-        { role: "user", parts: [{ text: systemPrompt + "\n\n" + userPrompt }] }
+    const response = await openai.chat.completions.create({
+      model: "gpt-4.1-mini",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
       ],
       temperature: 0.7,
     })
 
-    const content = response.text
+    const content = response.choices[0].message.content
     if (!content) {
       throw new Error("LLM returned no content.")
     }
@@ -57,7 +57,7 @@ Context/Current Description: ${context || "No current description provided."}`
 
 export async function POST(request: NextRequest) {
   try {
-    const { section, userInput, jobTitle, industry, context } = await request.json()
+    const { section, userInput, jobTitle, industry, context, careerKeywords } = await request.json()
 
     if (!section || !userInput || !jobTitle || !industry) {
       return NextResponse.json(
