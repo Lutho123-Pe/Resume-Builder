@@ -9,7 +9,7 @@ import { Progress } from "@/components/ui/progress"
 import { Loader2, Search, CheckCircle, XCircle, Lightbulb } from "lucide-react"
 
 interface JobMatcherProps {
-  resumeData: any
+  resumeContent: string
 }
 
 interface MatchResult {
@@ -20,7 +20,7 @@ interface MatchResult {
   keywordsToAdd: string[]
 }
 
-export function JobMatcher({ resumeData }: JobMatcherProps) {
+export function JobMatcher({ resumeContent }: JobMatcherProps) {
   const [jobDescription, setJobDescription] = useState("")
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [result, setResult] = useState<MatchResult | null>(null)
@@ -32,9 +32,8 @@ export function JobMatcher({ resumeData }: JobMatcherProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          resumeData,
+          resumeContent,
           jobDescription,
-          careerKeywords: resumeData.personalInfo.careerKeywords ? resumeData.personalInfo.careerKeywords.split(',').map((k: string) => k.trim()) : [],
         }),
       })
 
@@ -71,7 +70,7 @@ export function JobMatcher({ resumeData }: JobMatcherProps) {
 
         <Button
           onClick={analyzeMatch}
-          disabled={isAnalyzing || !jobDescription.trim() || !resumeData.personalInfo.fullName}
+          disabled={isAnalyzing || !jobDescription.trim() || !resumeContent.trim()}
           className="w-full"
           size="sm"
         >
