@@ -1,7 +1,7 @@
 # Resume generator
 
 *Automatically synced with your [v0.app](https://v0.app) deployments*
-Built this application using an AI tool
+*Built this application using an AI tool*
 
 
 [![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/alus-projects-4e1ab409/v0-new-chat)
